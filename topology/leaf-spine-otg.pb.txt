@@ -1,0 +1,42 @@
+# 2 leaf + 1 spine SONiC virtual switches, with an Ixia-c traffic generator
+# (KNE node "otg", 2 ports) cabled to the two leaves.
+#
+#   otg:eth1 -- leaf1:eth1   leaf1:eth2 -- spine1:eth1
+#   otg:eth2 -- leaf2:eth1   leaf2:eth2 -- spine1:eth2
+#
+# "name" becomes the Kubernetes namespace and must equal TOPO_ID.
+# Replace YOUR_SWITCH_IMAGE:latest with the container image that boots your
+# SONiC virtual-switch VM (see GCP_VM_FROM_SCRATCH.md, step 9).
+# "version" on the otg node must match the "release" in KNE's
+# manifests/keysight/ixiatg-configmap.yaml (0.0.1-9999 in the KNE checkout we used).
+
+name: "20"
+
+nodes: { name: "otg" vendor: KEYSIGHT version: "0.0.1-9999" }
+
+nodes: {
+  name: "leaf1" vendor: HOST
+  config: { image: "YOUR_SWITCH_IMAGE:latest" command: "/startup.sh"
+    env: { key: "SWITCH_ID" value: "1" }
+    env: { key: "TOPO_ID" value: "20" }
+    env: { key: "MGMT_PREFIX" value: "172.31" } }
+}
+nodes: {
+  name: "leaf2" vendor: HOST
+  config: { image: "YOUR_SWITCH_IMAGE:latest" command: "/startup.sh"
+    env: { key: "SWITCH_ID" value: "2" }
+    env: { key: "TOPO_ID" value: "20" }
+    env: { key: "MGMT_PREFIX" value: "172.31" } }
+}
+nodes: {
+  name: "spine1" vendor: HOST
+  config: { image: "YOUR_SWITCH_IMAGE:latest" command: "/startup.sh"
+    env: { key: "SWITCH_ID" value: "101" }
+    env: { key: "TOPO_ID" value: "20" }
+    env: { key: "MGMT_PREFIX" value: "172.31" } }
+}
+
+links: { a_node: "otg"   a_int: "eth1" z_node: "leaf1"  z_int: "eth1" }
+links: { a_node: "otg"   a_int: "eth2" z_node: "leaf2"  z_int: "eth1" }
+links: { a_node: "leaf1" a_int: "eth2" z_node: "spine1" z_int: "eth1" }
+links: { a_node: "leaf2" a_int: "eth2" z_node: "spine1" z_int: "eth2" }
